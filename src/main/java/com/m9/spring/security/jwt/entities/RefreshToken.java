@@ -1,4 +1,4 @@
-package com.m9.spring.security.jwt.models;
+package com.m9.spring.security.jwt.entities;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +9,7 @@ import javax.persistence.*;
 
 @Setter
 @Getter
-@Entity(name = "refreshtoken")
+@Entity(name = "refresh_token")
 public class RefreshToken {
   @Id
   @GeneratedValue(strategy = GenerationType.AUTO)

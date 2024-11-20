@@ -1,4 +1,4 @@
-package com.m9.spring.security.jwt.models;
+package com.m9.spring.security.jwt.enums;
 
 public enum ERole {
   ROLE_USER,

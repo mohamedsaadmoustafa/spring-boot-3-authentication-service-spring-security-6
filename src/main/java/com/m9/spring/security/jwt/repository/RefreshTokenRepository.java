@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
-import com.m9.spring.security.jwt.models.RefreshToken;
-import com.m9.spring.security.jwt.models.User;
+import com.m9.spring.security.jwt.entities.RefreshToken;
+import com.m9.spring.security.jwt.entities.User;
 
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {

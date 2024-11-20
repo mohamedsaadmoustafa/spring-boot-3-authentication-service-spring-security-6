@@ -1,5 +1,6 @@
 package com.m9.spring.security.jwt.security.services;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -10,10 +11,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.m9.spring.security.jwt.models.User;
+import com.m9.spring.security.jwt.entities.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class UserDetailsImpl implements UserDetails {
+	@Serial
 	private static final long serialVersionUID = 1L;
 	@Getter
     private final Long id;

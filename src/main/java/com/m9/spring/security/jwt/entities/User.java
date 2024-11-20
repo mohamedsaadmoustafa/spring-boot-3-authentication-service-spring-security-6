@@ -1,6 +1,7 @@
-package com.m9.spring.security.jwt.models;
+package com.m9.spring.security.jwt.entities;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import javax.validation.constraints.Size;
 
 @Setter
 @Getter
+@NoArgsConstructor
 @Entity
 @Table(	name = "users", 
 		uniqueConstraints = { 
@@ -42,9 +44,6 @@ public class User {
 				joinColumns = @JoinColumn(name = "user_id"), 
 				inverseJoinColumns = @JoinColumn(name = "role_id"))
 	private Set<Role> roles = new HashSet<>();
-
-	public User() {
-	}
 
 	public User(String username, String email, String password) {
 		this.username = username;

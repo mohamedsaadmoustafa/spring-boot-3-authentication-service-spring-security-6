@@ -5,8 +5,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.m9.spring.security.jwt.models.ERole;
-import com.m9.spring.security.jwt.models.Role;
+import com.m9.spring.security.jwt.enums.ERole;
+import com.m9.spring.security.jwt.entities.Role;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {

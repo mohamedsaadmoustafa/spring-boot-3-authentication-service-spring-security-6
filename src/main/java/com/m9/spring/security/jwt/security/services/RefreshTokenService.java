@@ -4,14 +4,15 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.m9.spring.security.jwt.advice.ErrorCode;
+import com.m9.spring.security.jwt.entities.User;
+import com.m9.spring.security.jwt.exception.CustomException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.m9.spring.security.jwt.exception.TokenRefreshException;
-import com.m9.spring.security.jwt.models.RefreshToken;
+import com.m9.spring.security.jwt.entities.RefreshToken;
 import com.m9.spring.security.jwt.repository.RefreshTokenRepository;
 import com.m9.spring.security.jwt.repository.UserRepository;
 
@@ -30,7 +31,9 @@ public class RefreshTokenService {
 
   public RefreshToken createRefreshToken(Long userId) {
     RefreshToken refreshToken = new RefreshToken();
-    refreshToken.setUser(userRepository.findById(userId).get());
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND.getCode(), ErrorCode.USER_NOT_FOUND.getMessage()));
+    refreshToken.setUser(user);
     refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
     refreshToken.setToken(UUID.randomUUID().toString());
     refreshToken = refreshTokenRepository.save(refreshToken);
@@ -40,13 +43,15 @@ public class RefreshTokenService {
   public RefreshToken verifyExpiration(RefreshToken token) {
     if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
       refreshTokenRepository.delete(token);
-      throw new TokenRefreshException(token.getToken(), "Refresh token was expired. Please make a new signing request");
+      throw new CustomException(ErrorCode.REFRESH_ACCESS_TOKEN_EXPIRED.getCode(), ErrorCode.REFRESH_ACCESS_TOKEN_EXPIRED.getMessage());
     }
     return token;
   }
 
   @Transactional
   public void deleteByUserId(Long userId) {
-    refreshTokenRepository.deleteByUser(userRepository.findById(userId).get());
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND.getCode(), ErrorCode.USER_NOT_FOUND.getMessage()));
+    refreshTokenRepository.deleteByUser(user);
   }
 }
