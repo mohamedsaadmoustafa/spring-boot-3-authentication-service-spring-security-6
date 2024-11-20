@@ -1,0 +1,2 @@
+ALTER TABLE roles
+ADD CONSTRAINT role_name_check CHECK (name IN ('ROLE_USER', 'ROLE_MODERATOR', 'ROLE_ADMIN'));
