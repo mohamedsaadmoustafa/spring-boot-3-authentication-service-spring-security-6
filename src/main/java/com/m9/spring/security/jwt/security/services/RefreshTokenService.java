@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,15 +16,13 @@ import com.m9.spring.security.jwt.repository.RefreshTokenRepository;
 import com.m9.spring.security.jwt.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshTokenService {
-  @Value("${bezkoder.app.jwtRefreshExpirationMs}")
+  @Value("${m9.app.jwtRefreshExpirationMs}")
   private Long refreshTokenDurationMs;
 
-  @Autowired
-  private RefreshTokenRepository refreshTokenRepository;
-
-  @Autowired
-  private UserRepository userRepository;
+  private final RefreshTokenRepository refreshTokenRepository;
+  private final UserRepository userRepository;
 
   public Optional<RefreshToken> findByToken(String token) {
     return refreshTokenRepository.findByToken(token);
@@ -31,11 +30,9 @@ public class RefreshTokenService {
 
   public RefreshToken createRefreshToken(Long userId) {
     RefreshToken refreshToken = new RefreshToken();
-
     refreshToken.setUser(userRepository.findById(userId).get());
     refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
     refreshToken.setToken(UUID.randomUUID().toString());
-
     refreshToken = refreshTokenRepository.save(refreshToken);
     return refreshToken;
   }
@@ -45,7 +42,6 @@ public class RefreshTokenService {
       refreshTokenRepository.delete(token);
       throw new TokenRefreshException(token.getToken(), "Refresh token was expired. Please make a new signing request");
     }
-
     return token;
   }
 
