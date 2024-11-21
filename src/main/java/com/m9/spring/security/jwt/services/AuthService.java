@@ -13,9 +13,9 @@ import com.m9.spring.security.jwt.payload.response.JwtTokens;
 import com.m9.spring.security.jwt.repository.RoleRepository;
 import com.m9.spring.security.jwt.repository.UserRepository;
 import com.m9.spring.security.jwt.security.jwt.JwtUtils;
-import com.m9.spring.security.jwt.security.services.RefreshTokenService;
 import com.m9.spring.security.jwt.security.services.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -67,16 +68,9 @@ public class AuthService {
 
     private void validateSignupRequest(SignupRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            throw new CustomException(
-                    ErrorCode.USERNAME_ALREADY_EXISTS.getCode(),
-                    ErrorCode.USERNAME_ALREADY_EXISTS.getMessage()
-            );
-        }
+            throw new CustomException(ErrorCode.USERNAME_ALREADY_EXISTS);}
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new CustomException(
-                    ErrorCode.EMAIL_ALREADY_EXISTS.getCode(),
-                    ErrorCode.EMAIL_ALREADY_EXISTS.getMessage()
-            );
+            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
 
@@ -100,21 +94,11 @@ public class AuthService {
 
     private Role findRoleByName(ERole roleName) {
         return roleRepository.findByName(roleName)
-                .orElseThrow(() -> new CustomException(
-                        ErrorCode.ROLE_NOT_FOUND.getCode(),
-                        ErrorCode.ROLE_NOT_FOUND.getMessage()
-                ));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROLE_NOT_FOUND));
     }
 
     public JwtTokens refreshToken(String requestRefreshToken) {
-        return refreshTokenService.findByToken(requestRefreshToken)
-                .map(refreshTokenService::verifyExpiration)
-                .map(RefreshToken::getUser)
-                .map(user -> {
-                    String token = jwtUtils.generateTokenFromUsername(user.getUsername());
-                    return new JwtTokens(token, requestRefreshToken);
-                })
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN.getCode(), ErrorCode.INVALID_REFRESH_TOKEN.getMessage()));
+        return refreshTokenService.findByRefreshToken(requestRefreshToken);
     }
 
     public void logoutUser() {

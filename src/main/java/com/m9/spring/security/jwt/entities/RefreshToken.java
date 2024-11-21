@@ -5,14 +5,14 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Setter
 @Getter
 @Entity(name = "refresh_token")
 public class RefreshToken {
   @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private long id;
 
   @OneToOne

@@ -1,5 +1,6 @@
 package com.m9.spring.security.jwt.exception;
 
+import com.m9.spring.security.jwt.advice.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +9,12 @@ import lombok.Setter;
 public class CustomException extends RuntimeException {
     private final int errorCode;
     private final String errorMessage;
+
+    public CustomException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode.getCode();
+        this.errorMessage = errorCode.getMessage();
+    }
 
     public CustomException(int errorCode, String errorMessage) {
         super(errorMessage);

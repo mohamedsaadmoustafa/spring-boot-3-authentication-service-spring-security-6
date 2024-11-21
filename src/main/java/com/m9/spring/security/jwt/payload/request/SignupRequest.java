@@ -5,7 +5,7 @@ import lombok.Setter;
 
 import java.util.Set;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
  
 @Setter
 @Getter
