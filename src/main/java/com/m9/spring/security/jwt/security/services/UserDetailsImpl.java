@@ -1,19 +1,20 @@
 package com.m9.spring.security.jwt.security.services;
 
-import java.io.Serial;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.m9.spring.security.jwt.entities.User;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.m9.spring.security.jwt.entities.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serial;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
+@Getter
+@Setter
 public class UserDetailsImpl implements UserDetails {
 	@Serial
 	private static final long serialVersionUID = 1L;
@@ -52,7 +53,7 @@ public class UserDetailsImpl implements UserDetails {
 		return authorities;
 	}
 
-    @Override
+	@Override
 	public String getPassword() {
 		return password;
 	}
@@ -80,15 +81,5 @@ public class UserDetailsImpl implements UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return true;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
-		UserDetailsImpl user = (UserDetailsImpl) o;
-		return Objects.equals(id, user.id);
 	}
 }

@@ -1,22 +1,21 @@
 package com.m9.spring.security.jwt.services;
 
-import java.time.Instant;
-import java.util.UUID;
-
 import com.m9.spring.security.jwt.advice.ConfigurationsManager;
 import com.m9.spring.security.jwt.advice.ErrorCode;
+import com.m9.spring.security.jwt.entities.RefreshToken;
 import com.m9.spring.security.jwt.entities.User;
 import com.m9.spring.security.jwt.exception.CustomException;
 import com.m9.spring.security.jwt.payload.response.JwtTokens;
+import com.m9.spring.security.jwt.repository.RefreshTokenRepository;
+import com.m9.spring.security.jwt.repository.UserRepository;
 import com.m9.spring.security.jwt.security.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.m9.spring.security.jwt.entities.RefreshToken;
-import com.m9.spring.security.jwt.repository.RefreshTokenRepository;
-import com.m9.spring.security.jwt.repository.UserRepository;
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,40 +27,58 @@ public class RefreshTokenService {
   private final ConfigurationsManager configurationsManager;
 
   public JwtTokens findByRefreshToken(String requestRefreshToken) {
+    log.info("Processing refresh token: {}", requestRefreshToken);
     return refreshTokenRepository.findByToken(requestRefreshToken)
-            .map(this::verifyExpiration)
+            .map(this::validateTokenExpiration)
             .map(RefreshToken::getUser)
             .map(user -> {
-              String token = jwtUtils.generateTokenFromUsername(user.getUsername());
-              return new JwtTokens(token, requestRefreshToken);
+              log.info("Valid refresh token for user: {}", user.getUsername());
+              String accessToken = jwtUtils.generateTokenFromUsername(user.getUsername());
+              return new JwtTokens(accessToken, requestRefreshToken);
             })
-            .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+            .orElseThrow(() -> {
+              log.error("Invalid refresh token: {}", requestRefreshToken);
+              return new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+            });
   }
 
   public RefreshToken createRefreshToken(Long userId) {
+    log.info("Creating refresh token for user ID: {}", userId);
+    User user = this.getUserById(userId);
     RefreshToken refreshToken = new RefreshToken();
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     refreshToken.setUser(user);
     Long refreshTokenDurationMs = configurationsManager.getRefreshExpireSeconds();
     refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
     refreshToken.setToken(UUID.randomUUID().toString());
     refreshToken = refreshTokenRepository.save(refreshToken);
+    log.info("Refresh token created successfully for user: {}", user.getUsername());
     return refreshToken;
   }
 
-  public RefreshToken verifyExpiration(RefreshToken token) {
-    if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
+  public RefreshToken validateTokenExpiration(RefreshToken token) {
+    log.debug("Validating expiration for token: {}", token.getToken());
+    if (token.getExpiryDate().isBefore(Instant.now())) {
+      log.warn("Token expired: {}", token.getToken());
       refreshTokenRepository.delete(token);
       throw new CustomException(ErrorCode.REFRESH_ACCESS_TOKEN_EXPIRED);
     }
+    log.debug("Token is valid: {}", token.getToken());
     return token;
   }
 
   @Transactional
   public void deleteByUserId(Long userId) {
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    log.info("Deleting refresh tokens for user ID: {}", userId);
+    User user = this.getUserById(userId);
     refreshTokenRepository.deleteByUser(user);
+    log.info("All refresh tokens deleted for user: {}", user.getUsername());
+  }
+
+  private User getUserById(Long userId) {
+    return userRepository.findById(userId)
+            .orElseThrow(() -> {
+              log.error("User not found for ID: {}", userId);
+              return new CustomException(ErrorCode.USER_NOT_FOUND);
+            });
   }
 }

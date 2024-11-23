@@ -26,7 +26,7 @@ public class AuthController {
     return ResponseEntity.ok(ApiResponse.success("Login successful!", jwtResponse));
   }
 
-  @PostMapping("/signup")
+  @PostMapping("/register")
   public ResponseEntity<ApiResponse<Void>> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
     authService.registerUser(signUpRequest);
     return ResponseEntity.ok(ApiResponse.success("User registered successfully!", null));

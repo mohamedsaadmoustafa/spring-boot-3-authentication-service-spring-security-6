@@ -14,31 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
+
     private final UserRepository userRepository;
 
-    @Override
+    /**
+     * Load user by username and return UserDetails object.
+     *
+     * @param username the username of the user to load
+     * @return UserDetails implementation for Spring Security
+     * @throws UsernameNotFoundException if the user is not found
+     */
     @Transactional
+    @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         return UserDetailsImpl.build(user);
     }
-
-//    @Override
-//    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-//        User user = userRepository.findByUsername(username)
-//                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-//        Set<GrantedAuthority> authorities = user
-//                .getRoles()
-//                .stream()
-//                .map((role) -> new SimpleGrantedAuthority(
-//                        role.getName().toString())
-//                )
-//                .collect(Collectors.toSet());
-//        return new org.springframework.security.core.userdetails.User(
-//                username,
-//                user.getPassword(),
-//                authorities
-//        );
-//    }
 }

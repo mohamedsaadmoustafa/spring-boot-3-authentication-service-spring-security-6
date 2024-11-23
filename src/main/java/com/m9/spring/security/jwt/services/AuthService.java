@@ -14,6 +14,7 @@ import com.m9.spring.security.jwt.repository.RoleRepository;
 import com.m9.spring.security.jwt.repository.UserRepository;
 import com.m9.spring.security.jwt.security.jwt.JwtUtils;
 import com.m9.spring.security.jwt.security.services.UserDetailsImpl;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,21 +41,28 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
 
     public JwtResponse authenticateUser(LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+        log.info("Authenticating user with username: {}", loginRequest.getUsername());
+        @NotBlank String userName = loginRequest.getUsername();
+        @NotBlank String password = loginRequest.getPassword();
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userName, password);
+        Authentication authentication = authenticationManager.authenticate(auth);
         SecurityContextHolder.getContext().setAuthentication(authentication);
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        log.debug("User '{}' authenticated successfully", userName);
         String jwt = jwtUtils.generateJwtToken(userDetails);
-        List<String> roles = userDetails.getAuthorities()
-                .stream()
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+        log.debug("Generated refresh token for user '{}'", userName);
+        List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
-        return new JwtResponse(jwt, "Bearer", refreshToken.getToken(),
-                userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles);
+        return new JwtResponse(
+                jwt, "Bearer", refreshToken.getToken(), userDetails.getId(),
+                userName, userDetails.getEmail(), roles
+        );
     }
 
     public void registerUser(SignupRequest signUpRequest) {
+        log.info("Registering user with username: {}, email: {}", signUpRequest.getUsername(), signUpRequest.getEmail());
         validateSignupRequest(signUpRequest);
         User user = new User(
                 signUpRequest.getUsername(),
@@ -64,18 +72,25 @@ public class AuthService {
         Set<Role> roles = resolveRoles(signUpRequest.getRole());
         user.setRoles(roles);
         userRepository.save(user);
+        log.info("User {} registered successfully", user.getUsername());
     }
 
     private void validateSignupRequest(SignupRequest signUpRequest) {
+        log.debug("Validating signup request for username: {} and email: {}", signUpRequest.getUsername(), signUpRequest.getEmail());
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            throw new CustomException(ErrorCode.USERNAME_ALREADY_EXISTS);}
+            log.error("Username {} already exists", signUpRequest.getUsername());
+            throw new CustomException(ErrorCode.USERNAME_ALREADY_EXISTS);
+        }
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+            log.error("Email {} already exists", signUpRequest.getEmail());
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
 
     private Set<Role> resolveRoles(Set<String> roleNames) {
+        log.debug("Resolving roles: {}", roleNames);
         if (roleNames == null || roleNames.isEmpty()) {
+            log.debug("No roles provided, defaulting to ROLE_USER");
             return Set.of(findRoleByName(ERole.ROLE_USER));
         }
         return roleNames.stream()
@@ -84,6 +99,7 @@ public class AuthService {
     }
 
     private Role mapRoleNameToRole(String roleName) {
+        log.debug("Mapping role name: {}", roleName);
         ERole eRole = switch (roleName.toLowerCase()) {
             case "admin" -> ERole.ROLE_ADMIN;
             case "mod" -> ERole.ROLE_MODERATOR;
@@ -93,16 +109,23 @@ public class AuthService {
     }
 
     private Role findRoleByName(ERole roleName) {
+        log.debug("Finding role by name: {}", roleName);
         return roleRepository.findByName(roleName)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROLE_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("Role {} not found", roleName);
+                    return new CustomException(ErrorCode.ROLE_NOT_FOUND);
+                });
     }
 
     public JwtTokens refreshToken(String requestRefreshToken) {
+        log.info("Refreshing token");
         return refreshTokenService.findByRefreshToken(requestRefreshToken);
     }
 
     public void logoutUser() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Logging out user: {}", userDetails.getUsername());
         refreshTokenService.deleteByUserId(userDetails.getId());
+        log.debug("User {} logged out successfully", userDetails.getUsername());
     }
 }
